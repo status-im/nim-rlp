@@ -8,14 +8,27 @@ type
 
   PrematureFinalizationError* = object of Exception
 
-proc bytesNeeded(num: int): int =
+  IntLike* = concept x, y
+    x + y
+    x * y
+    x - y
+    x div y
+    x mod y
+    x shr y
+    x shl y
+    x and int # for masking
+
+  # Integer* = SomeOrdinal or IntLike
+  Integer = int
+
+proc bytesNeeded(num: Integer): int =
   var n = num
   while n != 0:
     inc result
     n = n shr 8
 
 proc writeBigEndian(outStream: var Bytes, number: int,
-                    lastByteIdx: int, numberOfBytes: int) {.inline.} =
+                    lastByteIdx: int, numberOfBytes: int) =
   var n = number
   for i in countdown(lastByteIdx, lastByteIdx - int(numberOfBytes) + 1):
     outStream[i] = byte(n and 0xff)
@@ -120,19 +133,27 @@ template appendImpl(self; data, startMarker) =
 proc append*(self; data: string) =
   appendImpl(self, data, BLOB_START_MARKER)
 
-proc append*(self; i: int) =
+proc append*(self; data: Bytes) =
+  appendImpl(self, data, BLOB_START_MARKER)
+
+proc append*(self; i: Integer) =
   if i == 0:
-    output.add BLOB_START_MARKER
-  elif i < int(BLOB_START_MARKER):
-    output.add byte(i)
+    self.output.add BLOB_START_MARKER
+  elif i < Integer(BLOB_START_MARKER):
+    self.output.add byte(i)
   else:
     let bytesNeeded = i.bytesNeeded
-    output.writeCount(bytesNeeded, BLOB_START_MARKER)
-    output.writeBigEndian(i, bytesNeeded)
+    self.output.writeCount(bytesNeeded, BLOB_START_MARKER)
+    self.output.writeBigEndian(i.int, bytesNeeded)
 
-  maybeClosePendingLists()
+  self.maybeClosePendingLists()
 
 proc append*[T](self; list: openarray[T]) =
+  self.startList list.len
+  for i in 0 ..< list.len:
+    self.append list[i]
+
+proc append*[T](self; list: seq[T]) =
   self.startList list.len
   for i in 0 ..< list.len:
     self.append list[i]
@@ -170,7 +191,7 @@ macro encodeList*(args: varargs[untyped]): BytesRange =
   result = quote do:
     var `writer` = initRlpList(`listLen`)
     `body`
-    `writer`.finish
+    `writer`.finish()
 
 when false:
   # XXX: Currently fails with a malformed AST error on the args.len expression
