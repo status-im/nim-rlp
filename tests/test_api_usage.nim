@@ -7,7 +7,7 @@ proc i(s: string): string = s.replace(" ").replace("\n")
 proc inspectMatch(r: Rlp, s: string): bool = r.inspect.i == s.i
 
 test "empty bytes are not a proper RLP":
-  var rlp = rlpFromBytes Bytes(@[])
+  var rlp = rlpFromBytes Bytes(@[]).toRange
 
   check:
     not rlp.hasData

@@ -1,5 +1,10 @@
 import
-  types, ptr_arith, object_serialization, priv/defs, macros
+  macros, types,
+  ranges/[memranges, ptr_arith],
+  object_serialization, priv/defs
+
+export
+  memranges
 
 type
   RlpWriter* = object
@@ -119,14 +124,18 @@ proc startList(self; listSize: int) =
     pendingLists.add((listSize, output.len))
 
 template appendImpl(self; data, startMarker) =
+  mixin baseAddr
+
   if data.len == 1 and byte(data[0]) < BLOB_START_MARKER:
-    output.add byte(data[0])
+    self.output.add byte(data[0])
   else:
-    output.writeCount(data.len, startMarker)
+    self.output.writeCount(data.len, startMarker)
 
     let startPos = output.len
-    output.setLen(startPos + data.len)
-    copyMem(output.baseAddr.shift(startPos), data.baseAddr, data.len)
+    self.output.setLen(startPos + data.len)
+    copyMem(shift(baseAddr(self.output), startPos),
+            baseAddr(data),
+            data.len)
 
   maybeClosePendingLists()
 
@@ -134,6 +143,12 @@ proc append*(self; data: string) =
   appendImpl(self, data, BLOB_START_MARKER)
 
 proc append*(self; data: Bytes) =
+  appendImpl(self, data, BLOB_START_MARKER)
+
+proc append*(self; data: BytesRange) =
+  appendImpl(self, data, BLOB_START_MARKER)
+
+proc append*(self; data: MemRange) =
   appendImpl(self, data, BLOB_START_MARKER)
 
 proc append*(self; i: Integer) =
@@ -186,12 +201,12 @@ macro encodeList*(args: varargs[untyped]): BytesRange =
 
   for arg in args:
     body.add quote do:
-      `writer`.append(`arg`)
+      append(`writer`, `arg`)
 
   result = quote do:
     var `writer` = initRlpList(`listLen`)
     `body`
-    `writer`.finish()
+    finish(`writer`)
 
 when false:
   # XXX: Currently fails with a malformed AST error on the args.len expression

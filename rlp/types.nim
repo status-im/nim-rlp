@@ -1,3 +1,6 @@
+import
+  ranges/ptr_arith
+
 type
   Bytes* = seq[byte]
   
@@ -45,12 +48,20 @@ iterator items*(r: BytesRange): byte =
   for i in r.ibegin ..< r.iend:
     yield r.bytes[i]
 
-converter fromSeq*(s: Bytes): BytesRange =
+proc toRange*(s: Bytes): BytesRange =
   var seqCopy = s
   return initBytesRange(seqCopy)
 
-converter fromVarSeq*(s: var Bytes): BytesRange =
+proc toRange*(s: var Bytes): BytesRange =
   return initBytesRange(s)
+
+# XXX: This could be a template once the following issue is fixed:
+# https://github.com/nim-lang/Nim/issues/7223
+proc rangeBeginAddr*(r: BytesRange): pointer {.inline.} =
+  baseAddr(r.bytes).shift(r.ibegin)
+
+proc baseAddr*(r: BytesRange): pointer =
+  baseAddr(r.bytes).shift(r.ibegin)
 
 when false:
   import

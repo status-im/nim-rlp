@@ -315,6 +315,9 @@ template decode*(bytes: openarray[byte], T: typedesc): T =
   var bytesCopy = @bytes
   decode(initBytesRange(bytesCopy), T)
 
+proc append*(writer: var RlpWriter; rlp: Rlp) =
+  append(writer, rlp.rawData)
+
 proc inspectAux(self: var Rlp, depth: int, output: var string) =
   if not hasData():
     return

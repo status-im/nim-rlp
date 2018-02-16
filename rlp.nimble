@@ -1,13 +1,13 @@
 mode = ScriptMode.Verbose
 
 packageName   = "rlp"
-version       = "1.0.0"
+version       = "1.0.1"
 author        = "Status Research & Development GmbH"
 description   = "RLP serialization library for Nim"
 license       = "Apache2"
 skipDirs      = @["tests"]
 
-requires "nim >= 0.17.0"
+requires "nim >= 0.17.0", "ranges >= 0.0.1"
 
 proc configForTests() =
   --hints: off
