@@ -4,7 +4,7 @@ packageName   = "rlp"
 version       = "1.0.1"
 author        = "Status Research & Development GmbH"
 description   = "RLP serialization library for Nim"
-license       = "Apache2"
+license       = "Apache License 2.0"
 skipDirs      = @["tests"]
 
 requires "nim >= 0.17.0", "https://github.com/status-im/nim-ranges >= 0.0.1"
