@@ -184,7 +184,7 @@ proc toInt*(self: Rlp, IntType: typedesc): IntType =
     raise newException(BadCastError, "")
 
   for i in payloadStart ..< (payloadStart + payloadSize):
-    result = (result shl 8) or int(self.bytes[self.position + i])
+    result = cast[IntType](result shl 8) or cast[IntType](self.bytes[self.position + i])
 
 proc toString*(self: Rlp): string =
   if not isBlob():
@@ -266,8 +266,8 @@ proc read*(rlp: var Rlp, T: type string): string =
   result = rlp.toString
   rlp.skipElem
 
-proc read*(rlp: var Rlp, T: type int): int =
-  result = rlp.toInt(int)
+proc read*(rlp: var Rlp, T: type Integer): Integer =
+  result = rlp.toInt(T)
   rlp.skipElem
 
 proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
