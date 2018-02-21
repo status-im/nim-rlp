@@ -23,7 +23,7 @@ type
     x shl y is T
     x and int # for masking
 
-  Integer* = SomeOrdinal or IntLike
+  Integer* = SomeOrdinal or IntLike or uint or uint64
 
 proc bytesNeeded(num: Integer): int =
   var n = num

@@ -9,7 +9,7 @@ type
     receiver: string
 
   Foo = object
-    x: uint32
+    x: uint64
     y: string
     z: seq[int]
 
@@ -27,7 +27,7 @@ proc default(T: typedesc): T = discard
 
 test "encoding and decoding an object":
   var originalBar = Bar(b: "abracadabra",
-                        f: Foo(x: 5'u32, y: "hocus pocus", z: @[100, 200, 300]))
+                        f: Foo(x: 5'u64, y: "hocus pocus", z: @[100, 200, 300]))
 
   var bytes = encode(originalBar)
 

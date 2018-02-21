@@ -168,7 +168,7 @@ proc isInt*(self: Rlp): bool =
     return bytes[offset] != 0
   return false
 
-template maxBytes*(o: typedesc[Ordinal]): int = sizeof(o)
+template maxBytes*(o: typedesc[Ordinal | uint64 | uint]): int = sizeof(o)
 
 proc toInt*(self: Rlp, IntType: typedesc): IntType =
   # XXX: self insertions are not working in generic procs
