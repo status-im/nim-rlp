@@ -184,7 +184,7 @@ proc toInt*(self: Rlp, IntType: typedesc): IntType =
     raise newException(BadCastError, "")
 
   for i in payloadStart ..< (payloadStart + payloadSize):
-    result = cast[IntType](result shl 8) or cast[IntType](self.bytes[self.position + i])
+    result = (result shl 8).toInt or (self.bytes[self.position + i]).toInt
 
 proc toString*(self: Rlp): string =
   if not isBlob():
@@ -306,6 +306,7 @@ proc decode*(bytes: openarray[byte]): RlpNode =
     bytesCopy = @bytes
     rlp = rlpFromBytes initBytesRange(bytesCopy)
   return rlp.toNodes
+  
 
 template decode*(bytes: BytesRange, T: typedesc): untyped =
   var rlp = rlpFromBytes bytes
