@@ -25,5 +25,6 @@ before_install:
     export PATH=$PWD/bin:$PATH
     cd ..
 script:
+  - nimble install -y
   - nimble test
 

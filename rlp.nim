@@ -168,7 +168,7 @@ proc isInt*(self: Rlp): bool =
     return bytes[offset] != 0
   return false
 
-template maxBytes*(o: typedesc[Ordinal]): int = sizeof(o)
+template maxBytes*(o: typedesc[Ordinal | uint64 | uint]): int = sizeof(o)
 
 proc toInt*(self: Rlp, IntType: typedesc): IntType =
   # XXX: self insertions are not working in generic procs
@@ -184,7 +184,7 @@ proc toInt*(self: Rlp, IntType: typedesc): IntType =
     raise newException(BadCastError, "")
 
   for i in payloadStart ..< (payloadStart + payloadSize):
-    result = (result shl 8) or int(self.bytes[self.position + i])
+    result = cast[IntType](result shl 8) or cast[IntType](self.bytes[self.position + i])
 
 proc toString*(self: Rlp): string =
   if not isBlob():
@@ -266,8 +266,8 @@ proc read*(rlp: var Rlp, T: type string): string =
   result = rlp.toString
   rlp.skipElem
 
-proc read*(rlp: var Rlp, T: type int): int =
-  result = rlp.toInt(int)
+proc read*(rlp: var Rlp, T: type Integer): Integer =
+  result = rlp.toInt(T)
   rlp.skipElem
 
 proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
@@ -306,6 +306,7 @@ proc decode*(bytes: openarray[byte]): RlpNode =
     bytesCopy = @bytes
     rlp = rlpFromBytes initBytesRange(bytesCopy)
   return rlp.toNodes
+  
 
 template decode*(bytes: BytesRange, T: typedesc): untyped =
   var rlp = rlpFromBytes bytes

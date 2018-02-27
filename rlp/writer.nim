@@ -13,18 +13,17 @@ type
 
   PrematureFinalizationError* = object of Exception
 
-  IntLike* = concept x, y
-    x + y
-    x * y
-    x - y
-    x div y
-    x mod y
-    x shr y
-    x shl y
+  IntLike* = concept x, y, type T
+    x + y is T
+    x * y is T
+    x - y is T
+    x div y is T
+    x mod y is T
+    x shr y is T
+    x shl y is T
     x and int # for masking
 
-  # Integer* = SomeOrdinal or IntLike
-  Integer = int
+  Integer* = SomeOrdinal or IntLike or uint or uint64
 
 proc bytesNeeded(num: Integer): int =
   var n = num
@@ -154,7 +153,7 @@ proc append*(self; data: MemRange) =
 proc append*(self; i: Integer) =
   if i == 0:
     self.output.add BLOB_START_MARKER
-  elif i < Integer(BLOB_START_MARKER):
+  elif i < BLOB_START_MARKER.Integer:
     self.output.add byte(i)
   else:
     let bytesNeeded = i.bytesNeeded

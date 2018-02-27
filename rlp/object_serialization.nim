@@ -15,4 +15,3 @@ macro rlpFields*(T: typedesc, fields: varargs[untyped]): untyped =
   result = quote do:
     template enumerateRlpFields*(`ins`: `T`, `op`: untyped) {.inject.} =
       `body`
-
