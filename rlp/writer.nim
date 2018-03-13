@@ -25,6 +25,9 @@ type
 
   Integer* = SomeOrdinal or IntLike or uint or uint64
 
+const
+  wrapObjectsInList* = true
+
 proc bytesNeeded(num: Integer): int =
   var n = num
   while n != 0:
@@ -172,8 +175,15 @@ proc append*[T](self; list: seq[T]) =
   for i in 0 ..< list.len:
     self.append list[i]
 
-proc append*(self; data: object|tuple) =
+proc append*(self; data: object|tuple, wrapInList = wrapObjectsInList) =
   mixin enumerateRlpFields, append
+
+  if wrapInList:
+    var fieldsCount = 0
+    template countFields(x) = inc fieldsCount
+    enumerateRlpFields(data, countFields)
+    self.startList(fieldsCount)
+
   template op(x) = append(self, x)
   enumerateRlpFields(data, op)
 

@@ -30,7 +30,6 @@ test "encoding and decoding an object":
                         f: Foo(x: 5'u64, y: "hocus pocus", z: @[100, 200, 300]))
 
   var bytes = encode(originalBar)
-
   var r = rlpFromBytes(bytes)
   var restoredBar = r.read(Bar)
 

@@ -279,8 +279,16 @@ proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
   for elem in rlp:
     result.add rlp.read(E)
 
-proc read*(rlp: var Rlp, T: typedesc[object|tuple]): T =
+proc read*(rlp: var Rlp, T: typedesc[object|tuple],
+           wrappedInList = wrapObjectsInList): T =
   mixin enumerateRlpFields, read
+
+  if wrappedInList:
+    var
+      payloadOffset = rlp.payloadOffset()
+      payloadEnd = rlp.position + payloadOffset + rlp.payloadBytesCount()
+
+    rlp.position += payloadOffset
 
   template op(field) =
     field = rlp.read(type(field))
@@ -306,7 +314,7 @@ proc decode*(bytes: openarray[byte]): RlpNode =
     bytesCopy = @bytes
     rlp = rlpFromBytes initBytesRange(bytesCopy)
   return rlp.toNodes
-  
+
 
 template decode*(bytes: BytesRange, T: typedesc): untyped =
   var rlp = rlpFromBytes bytes
