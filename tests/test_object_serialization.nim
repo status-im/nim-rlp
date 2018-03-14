@@ -41,7 +41,7 @@ test "encoding and decoding an object":
   var t2 = bytes.decode(Transaction)
 
   check:
-    bytes.hexRepr == "85416c69636583426f628203e8" # verifies that Alice comes first
+    bytes.hexRepr == "cd85416c69636583426f628203e8" # verifies that Alice comes first
     t2.time == default(DateTime)
     t2.sender == "Alice"
     t2.receiver == "Bob"
