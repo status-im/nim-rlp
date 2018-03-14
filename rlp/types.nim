@@ -3,7 +3,7 @@ import
 
 type
   Bytes* = seq[byte]
-  
+
   BytesRange* = object
     bytes*: Bytes
     ibegin*, iend*: int
@@ -12,7 +12,7 @@ proc initBytesRange*(s: var Bytes, ibegin = 0, iend = -1): BytesRange =
   let e = if iend < 0: s.len + iend + 1
           else: iend
   assert ibegin >= 0 and e <= s.len
-  
+
   shallow(s)
   result.bytes = s
   result.ibegin = ibegin
@@ -40,7 +40,7 @@ proc slice*(r: BytesRange, ibegin: int, iend = -1): BytesRange =
   result.bytes = r.bytes
   result.ibegin = r.ibegin + ibegin
   let e = if iend < 0: r.iend + iend + 1
-          else: r.ibegin + r.iend
+          else: r.ibegin + iend
   assert ibegin >= 0 and e <= result.bytes.len
   result.iend = e
 
