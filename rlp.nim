@@ -247,7 +247,7 @@ iterator items*(self: var Rlp): var Rlp =
     position = elemEnd
 
 proc listElem*(self: Rlp, i: int): Rlp =
-  let payload = bytes.slice payloadOffset()
+  let payload = bytes.slice(position + payloadOffset())
   result = rlpFromBytes payload
   var pos = 0
   while pos < i and result.hasData:
