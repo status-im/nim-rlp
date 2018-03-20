@@ -70,6 +70,18 @@ test "encode and decode lists":
     rlp.listElem(1).toString == "Lorem ipsum dolor sit amet"
     rlp.listElem(2).toString == "Donec ligula tortor, egestas eu est vitae"
 
+test "nested lists":
+  let listBytes = encode([[1, 2, 3], [5, 6, 7]])
+  let listRlp = rlpFromBytes listBytes
+  let sublistRlp0 = listRlp.listElem(0)
+  let sublistRlp1 = listRlp.listElem(1)
+  check sublistRlp0.listElem(0).toInt(int) == 1
+  check sublistRlp0.listElem(1).toInt(int) == 2
+  check sublistRlp0.listElem(2).toInt(int) == 3
+  check sublistRlp1.listElem(0).toInt(int) == 5
+  check sublistRlp1.listElem(1).toInt(int) == 6
+  check sublistRlp1.listElem(2).toInt(int) == 7
+
 test "encoding length":
   let listBytes = encode([1,2,3,4,5])
   let listRlp = rlpFromBytes listBytes
