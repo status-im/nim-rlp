@@ -33,7 +33,7 @@ proc `[]`*(r: var BytesRange, i: int): var byte =
 proc `[]=`*(r: var BytesRange, i: int, v: byte) =
   r.bytes[r.ibegin + i] = v
 
-template len*(r: BytesRange): int =
+proc len*(r: BytesRange): int {.inline.} =
   r.iend - r.ibegin
 
 proc slice*(r: BytesRange, ibegin: int, iend = -1): BytesRange =
@@ -62,6 +62,15 @@ proc rangeBeginAddr*(r: BytesRange): pointer {.inline.} =
 
 proc baseAddr*(r: BytesRange): pointer =
   baseAddr(r.bytes).shift(r.ibegin)
+
+proc toBytes*(r: BytesRange, output: var openarray[byte]) =
+  let sz = r.len
+  assert(output.len >= sz)
+  copyMem(addr output[0], unsafeAddr r.bytes[r.ibegin], sz)
+
+proc toBytes*(r: BytesRange): Bytes =
+  result = newSeq[byte](r.len)
+  r.toBytes(result)
 
 when false:
   import
