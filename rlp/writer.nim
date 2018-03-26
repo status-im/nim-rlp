@@ -121,7 +121,7 @@ proc appendRawList(self; bytes: BytesRange) =
 
 proc startList(self; listSize: int) =
   if listSize == 0:
-    appendRawList zeroBytesRange
+    appendRawList(BytesRange())
   else:
     pendingLists.add((listSize, output.len))
 
@@ -147,7 +147,7 @@ proc append*(self; data: string) =
 proc append*(self; data: Bytes) =
   appendImpl(self, data, BLOB_START_MARKER)
 
-proc append*(self; data: BytesRange) =
+proc appendBytesRange(self; data: BytesRange) =
   appendImpl(self, data, BLOB_START_MARKER)
 
 proc append*(self; data: MemRange) =
@@ -176,16 +176,23 @@ proc append*[T](self; list: seq[T]) =
     self.append list[i]
 
 proc append*(self; data: object|tuple, wrapInList = wrapObjectsInList) =
-  mixin enumerateRlpFields, append
+  # TODO: This append proc should be overloaded by `BytesRange` after
+  # nim bug #7416 is fixed.
+  when data is BytesRange:
+    appendBytesRange(data)
+  else:
+    mixin enumerateRlpFields, append
 
-  if wrapInList:
-    var fieldsCount = 0
-    template countFields(x) = inc fieldsCount
-    enumerateRlpFields(data, countFields)
-    self.startList(fieldsCount)
+    const wrapInList = wrapObjectsInList
 
-  template op(x) = append(self, x)
-  enumerateRlpFields(data, op)
+    if wrapInList:
+      var fieldsCount = 0
+      template countFields(x) = inc fieldsCount
+      enumerateRlpFields(data, countFields)
+      self.startList(fieldsCount)
+
+    template op(x) = append(self, x)
+    enumerateRlpFields(data, op)
 
 proc initRlpList*(listSize: int): RlpWriter =
   result = initRlpWriter()
@@ -195,7 +202,7 @@ proc finish*(self): BytesRange =
   if pendingLists.len > 0:
     raise newException(PrematureFinalizationError,
       "Insufficient number of elements written to a started list")
-  result = initBytesRange(output)
+  result = output.toRange()
 
 proc encode*[T](v: T): BytesRange =
   var writer = initRlpWriter()

@@ -70,6 +70,13 @@ test "encode and decode lists":
     rlp.listElem(1).toString == "Lorem ipsum dolor sit amet"
     rlp.listElem(2).toString == "Donec ligula tortor, egestas eu est vitae"
 
+test "toBytes":
+  let rlp = rlpFromHex("f2cb847f000001827666827666a040ef02798f211da2e8173d37f255be908871ae65060dbb2f77fb29c0421447f4845ab90b50")
+  let tok = rlp.listElem(1).toBytes()
+  check:
+    tok.len == 32
+    tok.hexRepr == "40ef02798f211da2e8173d37f255be908871ae65060dbb2f77fb29c0421447f4"
+
 test "nested lists":
   let listBytes = encode([[1, 2, 3], [5, 6, 7]])
   let listRlp = rlpFromBytes listBytes
@@ -100,4 +107,3 @@ test "malformed/truncated RLP":
   var rlp = rlpFromHex("b8056d6f6f7365")
   expect MalformedRlpError:
     discard rlp.inspect
-

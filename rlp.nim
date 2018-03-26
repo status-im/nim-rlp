@@ -35,7 +35,7 @@ proc rlpFromBytes*(data: BytesRange): Rlp =
   result.position = 0
 
 let
-  zeroBytesRlp* = rlpFromBytes(zeroBytesRange)
+  zeroBytesRlp* = Rlp()
 
 proc rlpFromHex*(input: string): Rlp =
   if input.len mod 2 != 0:
@@ -44,15 +44,16 @@ proc rlpFromHex*(input: string): Rlp =
 
   let totalBytes = input.len div 2
   var backingStore = newSeq[byte](totalBytes)
-  result.bytes = initBytesRange(backingStore)
 
   for i in 0 ..< totalBytes:
     var nextByte: int
     if parseHex(input, nextByte, i*2, 2) == 2:
-      result.bytes[i] = byte(nextByte)
+      backingStore[i] = byte(nextByte)
     else:
       raise newException(BadCastError,
                          "The input string contains invalid characters")
+
+  result.bytes = backingStore.toRange()
 
 {.this: self.}
 
@@ -211,7 +212,7 @@ proc toBytes*(self: Rlp): BytesRange =
     payloadOffset = payloadOffset()
     payloadLen = payloadBytesCount()
     ibegin = position + payloadOffset
-    iend = ibegin + payloadLen
+    iend = ibegin + payloadLen - 1
 
   result = bytes.slice(ibegin, iend)
 
@@ -236,7 +237,7 @@ iterator items*(self: var Rlp): var Rlp =
     payloadOffset = payloadOffset()
     payloadEnd = position + payloadOffset + payloadBytesCount()
 
-  if payloadEnd > bytes.iend:
+  if payloadEnd > bytes.len:
     raise newException(MalformedRlpError, "List length extends past the end of the stream")
 
   position += payloadOffset
@@ -312,7 +313,7 @@ proc toNodes*(self: var Rlp): RlpNode =
 proc decode*(bytes: openarray[byte]): RlpNode =
   var
     bytesCopy = @bytes
-    rlp = rlpFromBytes initBytesRange(bytesCopy)
+    rlp = rlpFromBytes(bytesCopy.toRange())
   return rlp.toNodes
 
 
