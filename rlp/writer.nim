@@ -144,7 +144,7 @@ template appendImpl(self; data, startMarker) =
 proc append*(self; data: string) =
   appendImpl(self, data, BLOB_START_MARKER)
 
-proc append*(self; data: Bytes) =
+proc appendBlob(self; data: openarray[byte]) =
   appendImpl(self, data, BLOB_START_MARKER)
 
 proc appendBytesRange(self; data: BytesRange) =
@@ -165,10 +165,15 @@ proc append*(self; i: Integer) =
 
   self.maybeClosePendingLists()
 
-proc append*[T](self; list: openarray[T]) =
-  self.startList list.len
-  for i in 0 ..< list.len:
-    self.append list[i]
+proc append*[T](self; listOrBlob: openarray[T]) =
+  # TODO: This append proc should be overloaded by `openarray[byte]` after
+  # nim bug #7416 is fixed.
+  when T is byte:
+    self.appendBlob(listOrBlob)
+  else:
+    self.startList listOrBlob.len
+    for i in 0 ..< listOrBlob.len:
+      self.append listOrBlob[i]
 
 proc append*[T](self; list: seq[T]) =
   self.startList list.len
