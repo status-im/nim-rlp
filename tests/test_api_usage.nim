@@ -107,3 +107,15 @@ test "malformed/truncated RLP":
   var rlp = rlpFromHex("b8056d6f6f7365")
   expect MalformedRlpError:
     discard rlp.inspect
+
+test "encode byte arrays":
+  var b1 = [byte(1), 2, 5, 7, 8]
+  var b2 = [byte(6), 8, 12, 123]
+  var b3 = [byte(122), 56, 65, 12]
+
+  let rlp = rlpFromBytes(encode((b1, b2, b3)))
+  check:
+    rlp.listLen == 3
+    rlp.listElem(0).toBytes().toSeq() == @b1
+    rlp.listElem(1).toBytes().toSeq() == @b2
+    rlp.listElem(2).toBytes().toSeq() == @b3
