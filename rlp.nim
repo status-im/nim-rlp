@@ -275,14 +275,41 @@ proc read*(rlp: var Rlp, T: typedesc[enum]): T =
   result = T(rlp.toInt(int))
   rlp.skipElem
 
+proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
+  when E is byte:
+    if not rlp.isBlob:
+      raise newException(BadCastError, "The source RLP is not a blob.")
+
+    var bytes = rlp.toBytes
+    if result.len != bytes.len:
+      raise newException(BadCastError, "The source RLP has incorrect size")
+
+    copyMem(addr result[0], bytes.baseAddr, bytes.len)
+  else:
+    if not rlp.isList:
+      raise newException(BadCastError, "The source RLP is not a list.")
+
+    if result.len != rlp.listLen:
+      raise newException(BadCastError, "The source RLP has incorrect size")
+
+    var i = 0
+    for elem in rlp:
+      result[i] = rlp.read(E)
+      inc i
+
 proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
-  if not rlp.isList:
-    raise newException(BadCastError, "The source RLP is not a list.")
+  when E is byte:
+    var bytes = rlp.toBytes
+    result = newSeq[byte](bytes.len)
+    copyMem(addr result[0], bytes.baseAddr, bytes.len)
+  else:
+    if not rlp.isList:
+      raise newException(BadCastError, "The source RLP is not a list.")
 
-  result = newSeqOfCap[E](rlp.listLen)
+    result = newSeqOfCap[E](rlp.listLen)
 
-  for elem in rlp:
-    result.add rlp.read(E)
+    for elem in rlp:
+      result.add rlp.read(E)
 
 proc read*(rlp: var Rlp, T: typedesc[object|tuple],
            wrappedInList = wrapObjectsInList): T =
