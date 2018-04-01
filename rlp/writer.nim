@@ -148,6 +148,9 @@ proc append*(self; data: string) =
 proc appendBlob(self; data: openarray[byte]) =
   appendImpl(self, data, BLOB_START_MARKER)
 
+proc appendBlob(self; data: openarray[char]) =
+  appendImpl(self, data, BLOB_START_MARKER)
+
 proc appendBytesRange(self; data: BytesRange) =
   appendImpl(self, data, BLOB_START_MARKER)
 
@@ -176,7 +179,7 @@ proc append*[T](self; listOrBlob: openarray[T]) =
 
   # TODO: This append proc should be overloaded by `openarray[byte]` after
   # nim bug #7416 is fixed.
-  when T is byte:
+  when T is (byte or char):
     self.appendBlob(listOrBlob)
   else:
     self.startList listOrBlob.len

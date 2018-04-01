@@ -278,7 +278,7 @@ proc read*(rlp: var Rlp, T: typedesc[enum]): T =
 proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
   mixin read
 
-  when E is byte:
+  when E is (byte or char):
     if not rlp.isBlob:
       raise newException(BadCastError, "The source RLP is not a blob.")
 
@@ -302,7 +302,7 @@ proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
 proc read*[E](rlp: var Rlp, T: type seq[E]): T =
   mixin read
 
-  when E is byte:
+  when E is (byte or char):
     var bytes = rlp.toBytes
     result = newSeq[byte](bytes.len)
     copyMem(addr result[0], bytes.baseAddr, bytes.len)
