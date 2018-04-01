@@ -271,6 +271,10 @@ proc read*(rlp: var Rlp, T: type Integer): Integer =
   result = rlp.toInt(T)
   rlp.skipElem
 
+proc read*(rlp: var Rlp, T: typedesc[enum]): T =
+  result = T(rlp.toInt(int))
+  rlp.skipElem
+
 proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
   if not rlp.isList:
     raise newException(BadCastError, "The source RLP is not a list.")

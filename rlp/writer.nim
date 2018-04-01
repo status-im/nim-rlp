@@ -23,14 +23,15 @@ type
     x shl y is T
     x and int # for masking
 
-  Integer* = SomeOrdinal or IntLike or uint or uint64
+  Integer* = SomeInteger or IntLike
 
 const
   wrapObjectsInList* = true
 
 proc bytesNeeded(num: Integer): int =
+  type IntType = type(num)
   var n = num
-  while n != 0:
+  while n != IntType(0):
     inc result
     n = n shr 8
 
@@ -154,7 +155,9 @@ proc append*(self; data: MemRange) =
   appendImpl(self, data, BLOB_START_MARKER)
 
 proc append*(self; i: Integer) =
-  if i == 0:
+  type IntType = type(i)
+
+  if i == IntType(0):
     self.output.add BLOB_START_MARKER
   elif i < BLOB_START_MARKER.Integer:
     self.output.add byte(i)
@@ -164,6 +167,9 @@ proc append*(self; i: Integer) =
     self.output.writeBigEndian(i.int, bytesNeeded)
 
   self.maybeClosePendingLists()
+
+template append*(self; e: enum) =
+  append(self, int(e))
 
 proc append*[T](self; listOrBlob: openarray[T]) =
   # TODO: This append proc should be overloaded by `openarray[byte]` after
