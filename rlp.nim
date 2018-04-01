@@ -276,6 +276,8 @@ proc read*(rlp: var Rlp, T: typedesc[enum]): T =
   rlp.skipElem
 
 proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
+  mixin read
+
   when E is byte:
     if not rlp.isBlob:
       raise newException(BadCastError, "The source RLP is not a blob.")
@@ -297,7 +299,9 @@ proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
       result[i] = rlp.read(E)
       inc i
 
-proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
+proc read*[E](rlp: var Rlp, T: type seq[E]): T =
+  mixin read
+
   when E is byte:
     var bytes = rlp.toBytes
     result = newSeq[byte](bytes.len)
@@ -310,6 +314,9 @@ proc read*[E](rlp: var Rlp, T: typedesc[seq[E]]): T =
 
     for elem in rlp:
       result.add rlp.read(E)
+
+proc read*[E](rlp: var Rlp, T: type openarray[E]): seq[E] =
+  result = read(rlp, seq[E])
 
 proc read*(rlp: var Rlp, T: typedesc[object|tuple],
            wrappedInList = wrapObjectsInList): T =

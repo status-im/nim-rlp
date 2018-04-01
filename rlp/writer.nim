@@ -172,6 +172,8 @@ template append*(self; e: enum) =
   append(self, int(e))
 
 proc append*[T](self; listOrBlob: openarray[T]) =
+  mixin append
+
   # TODO: This append proc should be overloaded by `openarray[byte]` after
   # nim bug #7416 is fixed.
   when T is byte:
@@ -182,6 +184,8 @@ proc append*[T](self; listOrBlob: openarray[T]) =
       self.append listOrBlob[i]
 
 proc append*[T](self; list: seq[T]) =
+  mixin append
+
   self.startList list.len
   for i in 0 ..< list.len:
     self.append list[i]
