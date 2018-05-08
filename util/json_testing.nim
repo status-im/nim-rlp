@@ -56,7 +56,7 @@ proc runTests*(filename: string) =
         echo "  INTERPRETATION:\n", inspectOutput
         continue
     else:
-      if input.kind == JString and input.str[0] == '#':
+      if input.kind == JString and input.str.len != 0 and input.str[0] == '#':
         continue
 
       var outRlp = initRlpWriter()
