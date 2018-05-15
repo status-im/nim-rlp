@@ -186,13 +186,6 @@ proc append*[T](self; listOrBlob: openarray[T]) =
     for i in 0 ..< listOrBlob.len:
       self.append listOrBlob[i]
 
-proc append*[T](self; list: seq[T]) =
-  mixin append
-
-  self.startList list.len
-  for i in 0 ..< list.len:
-    self.append list[i]
-
 proc append*(self; data: object|tuple, wrapInList = wrapObjectsInList) =
   # TODO: This append proc should be overloaded by `BytesRange` after
   # nim bug #7416 is fixed.

@@ -111,7 +111,7 @@ test "malformed/truncated RLP":
 test "encode byte arrays":
   var b1 = [byte(1), 2, 5, 7, 8]
   var b2 = [byte(6), 8, 12, 123]
-  var b3 = [byte(122), 56, 65, 12]
+  var b3 = @[byte(122), 56, 65, 12]
 
   let rlp = rlpFromBytes(encode((b1, b2, b3)))
   check:
