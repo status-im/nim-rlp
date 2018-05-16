@@ -120,7 +120,7 @@ proc appendRawList(self; bytes: BytesRange) =
   output.add(bytes)
   maybeClosePendingLists()
 
-proc startList(self; listSize: int) =
+proc startList*(self; listSize: int) =
   if listSize == 0:
     appendRawList(BytesRange())
   else:
@@ -186,24 +186,30 @@ proc append*[T](self; listOrBlob: openarray[T]) =
     for i in 0 ..< listOrBlob.len:
       self.append listOrBlob[i]
 
-proc append*(self; data: object|tuple, wrapInList = wrapObjectsInList) =
+proc appendTupleOrObject(self; data: object|tuple, wrapInList: bool) =
+  mixin enumerateRlpFields, append
+
+  const wrapInList = wrapObjectsInList
+
+  if wrapInList:
+    var fieldsCount = 0
+    template countFields(x) = inc fieldsCount
+    enumerateRlpFields(data, countFields)
+    self.startList(fieldsCount)
+
+  template op(x) = append(self, x)
+  enumerateRlpFields(data, op)
+
+proc append*(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =
   # TODO: This append proc should be overloaded by `BytesRange` after
   # nim bug #7416 is fixed.
   when data is BytesRange:
-    appendBytesRange(data)
+    self.appendBytesRange(data)
   else:
-    mixin enumerateRlpFields, append
+    self.appendTupleOrObject(data, wrapInList)
 
-    const wrapInList = wrapObjectsInList
-
-    if wrapInList:
-      var fieldsCount = 0
-      template countFields(x) = inc fieldsCount
-      enumerateRlpFields(data, countFields)
-      self.startList(fieldsCount)
-
-    template op(x) = append(self, x)
-    enumerateRlpFields(data, op)
+proc append*(self; data: tuple, wrapInList = wrapObjectsInList) {.inline.} =
+  self.appendTupleOrObject(data, wrapInList)
 
 proc initRlpList*(listSize: int): RlpWriter =
   result = initRlpWriter()
