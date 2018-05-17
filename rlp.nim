@@ -26,9 +26,10 @@ type
     of rlpList:
       elems*: seq[RlpNode]
 
-  MalformedRlpError* = object of Exception
-  UnsupportedRlpError* = object of Exception
-  BadCastError* = object of Exception
+  RlpError* = object of Exception
+  MalformedRlpError* = object of RlpError
+  UnsupportedRlpError* = object of RlpError
+  RlpTypeMismatch* = object of RlpError
 
 proc rlpFromBytes*(data: BytesRange): Rlp =
   result.bytes = data
@@ -38,9 +39,8 @@ let
   zeroBytesRlp* = Rlp()
 
 proc rlpFromHex*(input: string): Rlp =
-  if input.len mod 2 != 0:
-    raise newException(BadCastError,
-                       "The input string len should be even (assuming two characters per byte)")
+  doAssert input.len mod 2 == 0,
+          "rlpFromHex expects a string with even number of characters (assuming two characters per byte)"
 
   let totalBytes = input.len div 2
   var backingStore = newSeq[byte](totalBytes)
@@ -50,8 +50,7 @@ proc rlpFromHex*(input: string): Rlp =
     if parseHex(input, nextByte, i*2, 2) == 2:
       backingStore[i] = byte(nextByte)
     else:
-      raise newException(BadCastError,
-                         "The input string contains invalid characters")
+      doAssert false, "rlpFromHex expects a hexademical string, but the input contains non hexademical characters"
 
   result.bytes = backingStore.toRange()
 
@@ -172,24 +171,29 @@ proc isInt*(self: Rlp): bool =
 template maxBytes*(o: typedesc[Ordinal | uint64 | uint]): int = sizeof(o)
 
 proc toInt*(self: Rlp, IntType: typedesc): IntType =
+  mixin maxBytes
+
   # XXX: self insertions are not working in generic procs
   # https://github.com/nim-lang/Nim/issues/5053
-  if self.isList() or not self.hasData():
-    raise newException(BadCastError, "")
+  if not self.hasData():
+    raise newException(RlpTypeMismatch, "Attempt to read an Int value past the RLP end")
+
+  if self.isList():
+    raise newException(RlpTypeMismatch, "Int expected, but found a List")
 
   let
     payloadStart = self.payloadOffset()
     payloadSize = self.payloadBytesCount()
 
   if payloadSize > maxBytes(IntType):
-    raise newException(BadCastError, "")
+    raise newException(RlpTypeMismatch, "The RLP contains a larger than expected Int value")
 
   for i in payloadStart ..< (payloadStart + payloadSize):
     result = cast[IntType](result shl 8) or cast[IntType](self.bytes[self.position + i])
 
 proc toString*(self: Rlp): string =
   if not isBlob():
-    raise newException(BadCastError, "")
+    raise newException(RlpTypeMismatch, "String expected, but the source RLP is not a blob")
 
   let
     payloadOffset = payloadOffset()
@@ -206,7 +210,7 @@ proc toString*(self: Rlp): string =
 
 proc toBytes*(self: Rlp): BytesRange =
   if not isBlob():
-    raise newException(BadCastError, "")
+    raise newException(RlpTypeMismatch, "Bytes expected, but the source RLP in not a blob")
 
   let
     payloadOffset = payloadOffset()
@@ -280,19 +284,22 @@ proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
 
   when E is (byte or char):
     if not rlp.isBlob:
-      raise newException(BadCastError, "The source RLP is not a blob.")
+      raise newException(RlpTypeMismatch, "Bytes array expected, but the source RLP is not a blob.")
 
     var bytes = rlp.toBytes
     if result.len != bytes.len:
-      raise newException(BadCastError, "The source RLP has incorrect size")
+      raise newException(RlpTypeMismatch, "Fixed-size array expected, but the source RLP contains a blob of different lenght")
 
     copyMem(addr result[0], bytes.baseAddr, bytes.len)
+
+    rlp.skipElem
+
   else:
     if not rlp.isList:
-      raise newException(BadCastError, "The source RLP is not a list.")
+      raise newException(RlpTypeMismatch, "List expected, but the source RLP is not a list.")
 
     if result.len != rlp.listLen:
-      raise newException(BadCastError, "The source RLP has incorrect size")
+      raise newException(RlpTypeMismatch, "Fixed-size array expected, but the source RLP contains a list of different length")
 
     var i = 0
     for elem in rlp:
@@ -306,9 +313,10 @@ proc read*[E](rlp: var Rlp, T: type seq[E]): T =
     var bytes = rlp.toBytes
     result = newSeq[byte](bytes.len)
     copyMem(addr result[0], bytes.baseAddr, bytes.len)
+    rlp.skipElem
   else:
     if not rlp.isList:
-      raise newException(BadCastError, "The source RLP is not a list.")
+      raise newException(RlpTypeMismatch, "Sequence expected, but the source RLP is not a list.")
 
     result = newSeqOfCap[E](rlp.listLen)
 
