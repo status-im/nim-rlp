@@ -32,6 +32,24 @@ test "you cannot finish a list without appending enough elements":
 
 proc withNewLines(x: string): string = x & "\n"
 
+test "encode/decode object":
+  type MyObj = object
+    a: array[3, char]
+    b: int
+
+  var input: MyObj
+  input.a = ['e', 't', 'h']
+  input.b = 63
+
+  var writer = initRlpWriter()
+  writer.append(input)
+  let bytes = writer.finish()
+  var rlp = rlpFromBytes(bytes)
+
+  var output = rlp.read(MyObj)
+  check:
+    input == output
+
 test "encode and decode lists":
   var writer = initRlpList(3)
   writer.append "foo"
