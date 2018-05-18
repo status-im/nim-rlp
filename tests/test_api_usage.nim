@@ -33,13 +33,20 @@ test "you cannot finish a list without appending enough elements":
 proc withNewLines(x: string): string = x & "\n"
 
 test "encode/decode object":
-  type MyObj = object
-    a: array[3, char]
-    b: int
+  type
+    MyEnum = enum
+      foo,
+      bar
+
+    MyObj = object
+      a: array[3, char]
+      b: int
+      c: MyEnum
 
   var input: MyObj
   input.a = ['e', 't', 'h']
   input.b = 63
+  input.c = bar
 
   var writer = initRlpWriter()
   writer.append(input)

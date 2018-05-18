@@ -276,7 +276,7 @@ proc read*(rlp: var Rlp, T: type Integer): Integer =
   rlp.skipElem
 
 proc read*(rlp: var Rlp, T: typedesc[enum]): T =
-  result = T(rlp.toInt(int))
+  result = type(result)(rlp.toInt(int))
   rlp.skipElem
 
 proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
