@@ -15,3 +15,8 @@ macro rlpFields*(T: typedesc, fields: varargs[untyped]): untyped =
   result = quote do:
     template enumerateRlpFields*(`ins`: `T`, `op`: untyped) {.inject.} =
       `body`
+
+template rlpInline* {.pragma.}
+  ## This can be specified on a record field in order to avoid the
+  ## default behavior of wrapping the record in a RLP list.
+

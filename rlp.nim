@@ -267,19 +267,19 @@ proc listLen*(self: Rlp): int =
   for elem in rlp:
     inc result
 
-proc read*(rlp: var Rlp, T: type string): string =
+proc readImpl(rlp: var Rlp, T: type string): string =
   result = rlp.toString
   rlp.skipElem
 
-proc read*(rlp: var Rlp, T: type Integer): Integer =
+proc readImpl(rlp: var Rlp, T: type Integer): Integer =
   result = rlp.toInt(T)
   rlp.skipElem
 
-proc read*(rlp: var Rlp, T: typedesc[enum]): T =
+proc readImpl(rlp: var Rlp, T: typedesc[enum]): T =
   result = type(result)(rlp.toInt(int))
   rlp.skipElem
 
-proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
+proc readImpl[R, E](rlp: var Rlp, T: type array[R, E]): T =
   mixin read
 
   when E is (byte or char):
@@ -306,7 +306,7 @@ proc read*[R, E](rlp: var Rlp, T: type array[R, E]): T =
       result[i] = rlp.read(E)
       inc i
 
-proc read*[E](rlp: var Rlp, T: type seq[E]): T =
+proc readImpl[E](rlp: var Rlp, T: type seq[E]): T =
   mixin read
 
   when E is (byte or char):
@@ -323,11 +323,11 @@ proc read*[E](rlp: var Rlp, T: type seq[E]): T =
     for elem in rlp:
       result.add rlp.read(E)
 
-proc read*[E](rlp: var Rlp, T: type openarray[E]): seq[E] =
-  result = read(rlp, seq[E])
+proc readImpl[E](rlp: var Rlp, T: type openarray[E]): seq[E] =
+  result = readImpl(rlp, seq[E])
 
-proc read*(rlp: var Rlp, T: typedesc[object|tuple],
-           wrappedInList = wrapObjectsInList): T =
+proc readImpl(rlp: var Rlp, T: typedesc[object|tuple],
+              wrappedInList = wrapObjectsInList): T =
   mixin enumerateRlpFields, read
 
   if wrappedInList:
@@ -356,14 +356,19 @@ proc toNodes*(self: var Rlp): RlpNode =
     result.bytes = toBytes()
     position = currentElemEnd()
 
+# We define a single `read` template with a pretty low specifity
+# score in order to facilitate easier overloading with user types:
+template read*(rlp: var Rlp, T: typedesc): auto =
+  readImpl(rlp, T)
+
 proc decode*(bytes: openarray[byte]): RlpNode =
   var
     bytesCopy = @bytes
     rlp = rlpFromBytes(bytesCopy.toRange())
   return rlp.toNodes
 
-
 template decode*(bytes: BytesRange, T: typedesc): untyped =
+  mixin read
   var rlp = rlpFromBytes bytes
   rlp.read(T)
 
@@ -373,6 +378,13 @@ template decode*(bytes: openarray[byte], T: typedesc): T =
 
 proc append*(writer: var RlpWriter; rlp: Rlp) =
   append(writer, rlp.rawData)
+
+proc isPrintable(s: string): bool =
+  for c in s:
+    if ord(c) < 32 or ord(c) >= 128:
+      return false
+
+  return true
 
 proc inspectAux(self: var Rlp, depth: int, output: var string) =
   if not hasData():
@@ -388,9 +400,17 @@ proc inspectAux(self: var Rlp, depth: int, output: var string) =
     output.add "byte "
     output.add $bytes[position]
   elif self.isBlob:
-    output.add '"'
-    output.add self.toString
-    output.add '"'
+    let str = self.toString
+    if str.isPrintable:
+      output.add '"'
+      output.add str
+      output.add '"'
+    else:
+      output.add "blob(" & $str.len & ") ["
+      for c in str:
+        output.add $ord(c)
+        output.add ","
+      output[^1] = ']'
   else:
     output.add "{\n"
     for subitem in self:

@@ -126,7 +126,7 @@ proc startList*(self; listSize: int) =
   else:
     pendingLists.add((listSize, output.len))
 
-template appendImpl(self; data, startMarker) =
+template appendBlob(self; data, startMarker) =
   mixin baseAddr
 
   if data.len == 1 and byte(data[0]) < BLOB_START_MARKER:
@@ -142,22 +142,22 @@ template appendImpl(self; data, startMarker) =
 
   maybeClosePendingLists()
 
-proc append*(self; data: string) =
-  appendImpl(self, data, BLOB_START_MARKER)
+proc appendImpl(self; data: string) =
+  appendBlob(self, data, BLOB_START_MARKER)
 
 proc appendBlob(self; data: openarray[byte]) =
-  appendImpl(self, data, BLOB_START_MARKER)
+  appendBlob(self, data, BLOB_START_MARKER)
 
 proc appendBlob(self; data: openarray[char]) =
-  appendImpl(self, data, BLOB_START_MARKER)
+  appendBlob(self, data, BLOB_START_MARKER)
 
 proc appendBytesRange(self; data: BytesRange) =
-  appendImpl(self, data, BLOB_START_MARKER)
+  appendBlob(self, data, BLOB_START_MARKER)
 
-proc append*(self; data: MemRange) =
-  appendImpl(self, data, BLOB_START_MARKER)
+proc appendImpl(self; data: MemRange) =
+  appendBlob(self, data, BLOB_START_MARKER)
 
-proc append*(self; i: Integer) =
+proc appendImpl(self; i: Integer) =
   type IntType = type(i)
 
   if i == IntType(0):
@@ -171,10 +171,10 @@ proc append*(self; i: Integer) =
 
   self.maybeClosePendingLists()
 
-template append*(self; e: enum) =
-  append(self, int(e))
+template appendImpl(self; e: enum) =
+  appendImpl(self, int(e))
 
-proc append*[T](self; listOrBlob: openarray[T]) =
+proc appendImpl[T](self; listOrBlob: openarray[T]) =
   mixin append
 
   # TODO: This append proc should be overloaded by `openarray[byte]` after
@@ -200,7 +200,7 @@ proc appendTupleOrObject(self; data: object|tuple, wrapInList: bool) =
   template op(x) = append(self, x)
   enumerateRlpFields(data, op)
 
-proc append*(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =
+proc appendImpl(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =
   # TODO: This append proc should be overloaded by `BytesRange` after
   # nim bug #7416 is fixed.
   when data is BytesRange:
@@ -208,8 +208,12 @@ proc append*(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =
   else:
     self.appendTupleOrObject(data, wrapInList)
 
-proc append*(self; data: tuple, wrapInList = wrapObjectsInList) {.inline.} =
+proc appendImpl(self; data: tuple, wrapInList = wrapObjectsInList) {.inline.} =
   self.appendTupleOrObject(data, wrapInList)
+
+# We define a single `append` template with a pretty low specifity
+# score in order to facilitate easier overloading with user types:
+template append*[T](self; data: T) = appendImpl(self, data)
 
 proc initRlpList*(listSize: int): RlpWriter =
   result = initRlpWriter()
@@ -222,6 +226,7 @@ proc finish*(self): BytesRange =
   result = output.toRange()
 
 proc encode*[T](v: T): BytesRange =
+  mixin append
   var writer = initRlpWriter()
   writer.append(v)
   return writer.finish
@@ -231,10 +236,11 @@ macro encodeList*(args: varargs[untyped]): BytesRange =
     listLen = args.len
     writer = genSym(nskVar, "rlpWriter")
     body = newStmtList()
+    append = bindSym("append", brForceOpen)
 
   for arg in args:
     body.add quote do:
-      append(`writer`, `arg`)
+      `append`(`writer`, `arg`)
 
   result = quote do:
     var `writer` = initRlpList(`listLen`)
@@ -244,6 +250,7 @@ macro encodeList*(args: varargs[untyped]): BytesRange =
 when false:
   # XXX: Currently fails with a malformed AST error on the args.len expression
   template encodeList*(args: varargs[untyped]): BytesRange =
+    mixin append
     var writer = initRlpList(args.len)
     for arg in args:
       writer.append(arg)
