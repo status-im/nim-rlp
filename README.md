@@ -3,9 +3,17 @@ nim-rlp
 
 [![Build Status](https://travis-ci.org/status-im/nim-rlp.svg?branch=master)](https://travis-ci.org/status-im/nim-rlp)
 
+## Introduction
+
 A Nim implementation of the Recursive Length Prefix encoding (RLP) as specified
 in the Ethereum's [Yellow Papper](https://ethereum.github.io/yellowpaper/paper.pdf)
 and [Wiki](https://github.com/ethereum/wiki/wiki/RLP).
+
+
+## Installation
+
+nimble install https://github.com/status-im/nim-rlp/blob/master/rlp.nimble
+
 
 ## Reading RLP data
 
