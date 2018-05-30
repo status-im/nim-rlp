@@ -12,7 +12,7 @@ and [Wiki](https://github.com/ethereum/wiki/wiki/RLP).
 
 ## Installation
 
-nimble install https://github.com/status-im/nim-rlp/blob/master/rlp.nimble
+$ nimble install rlp
 
 
 ## Reading RLP data
