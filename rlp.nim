@@ -35,8 +35,7 @@ proc rlpFromBytes*(data: BytesRange): Rlp =
   result.bytes = data
   result.position = 0
 
-let
-  zeroBytesRlp* = Rlp()
+const zeroBytesRlp* = Rlp()
 
 proc rlpFromHex*(input: string): Rlp =
   doAssert input.len mod 2 == 0,
