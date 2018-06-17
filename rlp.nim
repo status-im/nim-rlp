@@ -35,8 +35,13 @@ proc rlpFromBytes*(data: BytesRange): Rlp =
   result.bytes = data
   result.position = 0
 
-let
-  zeroBytesRlp* = Rlp()
+let zeroBytesRlpInst = Rlp()
+# We want `zeroBytesRlp` to act as a constant value, but not
+# to interfere with the `gcsafe` effect. To achieve this, we
+# need an accessor template:
+template zeroBytesRlp*: auto = {.gcsafe.}: zeroBytesRlpInst
+# XXX: Perhaps this is no longer relevant with `BytesRange`
+# having the `shallow` pragma, must be investigated.
 
 proc rlpFromHex*(input: string): Rlp =
   doAssert input.len mod 2 == 0,
