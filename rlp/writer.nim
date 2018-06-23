@@ -120,6 +120,10 @@ proc appendRawList(self; bytes: BytesRange) =
   output.add(bytes)
   maybeClosePendingLists()
 
+proc appendRawBytes*(self; bytes: BytesRange) =
+  output.add(bytes)
+  maybeClosePendingLists()
+
 proc startList*(self; listSize: int) =
   if listSize == 0:
     appendRawList(BytesRange())

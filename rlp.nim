@@ -41,12 +41,15 @@ proc rlpFromHex*(input: string): Rlp =
   doAssert input.len mod 2 == 0,
           "rlpFromHex expects a string with even number of characters (assuming two characters per byte)"
 
-  let totalBytes = input.len div 2
+  var startByte = if input.len >= 2 and input[0] == '0' and input[1] == 'x': 2
+                  else: 0
+
+  let totalBytes = (input.len - startByte) div 2
   var backingStore = newSeq[byte](totalBytes)
 
   for i in 0 ..< totalBytes:
     var nextByte: int
-    if parseHex(input, nextByte, i*2, 2) == 2:
+    if parseHex(input, nextByte, startByte + i*2, 2) == 2:
       backingStore[i] = byte(nextByte)
     else:
       doAssert false, "rlpFromHex expects a hexademical string, but the input contains non hexademical characters"
@@ -58,8 +61,10 @@ proc rlpFromHex*(input: string): Rlp =
 proc hasData*(self: Rlp): bool =
   position < bytes.len
 
-template rawData*(self: Rlp): BytesRange =
-  self.bytes
+proc currentElemEnd(self: Rlp): int
+
+proc rawData*(self: Rlp): BytesRange =
+  return self.bytes[position ..< self.currentElemEnd]
 
 proc isBlob*(self: Rlp): bool =
   hasData() and bytes[position] < LIST_START_MARKER
@@ -209,7 +214,8 @@ proc toString*(self: Rlp): string =
 
 proc toBytes*(self: Rlp): BytesRange =
   if not isBlob():
-    raise newException(RlpTypeMismatch, "Bytes expected, but the source RLP in not a blob")
+    raise newException(RlpTypeMismatch,
+                       "Bytes expected, but the source RLP in not a blob")
 
   let
     payloadOffset = payloadOffset()
@@ -220,15 +226,17 @@ proc toBytes*(self: Rlp): BytesRange =
   result = bytes.slice(ibegin, iend)
 
 proc currentElemEnd(self: Rlp): int =
+  assert hasData()
   result = position
-
-  if not hasData():
-    return
 
   if isSingleByte():
     result += 1
   elif isBlob() or isList():
     result += payloadOffset() + payloadBytesCount()
+
+proc enterList*(self: var Rlp) =
+  assert isList()
+  position += payloadOffset()
 
 proc skipElem*(rlp: var Rlp) =
   rlp.position = rlp.currentElemEnd
@@ -376,7 +384,7 @@ template decode*(bytes: openarray[byte], T: typedesc): T =
   decode(initBytesRange(bytesCopy), T)
 
 proc append*(writer: var RlpWriter; rlp: Rlp) =
-  append(writer, rlp.rawData)
+  appendRawBytes(writer, rlp.rawData)
 
 proc isPrintable(s: string): bool =
   for c in s:
@@ -385,7 +393,7 @@ proc isPrintable(s: string): bool =
 
   return true
 
-proc inspectAux(self: var Rlp, depth: int, output: var string) =
+proc inspectAux(self: var Rlp, depth: int, hexOutput: bool, output: var string) =
   if not hasData():
     return
 
@@ -407,19 +415,26 @@ proc inspectAux(self: var Rlp, depth: int, output: var string) =
     else:
       output.add "blob(" & $str.len & ") ["
       for c in str:
-        output.add $ord(c)
-        output.add ","
-      output[^1] = ']'
+        if hexOutput:
+          output.add toHex(int(c), 2)
+        else:
+          output.add $ord(c)
+          output.add ","
+
+      if hexOutput:
+        output.add ']'
+      else:
+        output[^1] = ']'
   else:
     output.add "{\n"
     for subitem in self:
-      inspectAux(subitem, depth + 1, output)
+      inspectAux(subitem, depth + 1, hexOutput, output)
       output.add "\n"
     indent()
     output.add "}"
 
-proc inspect*(self: Rlp, indent = 0): string =
+proc inspect*(self: Rlp, indent = 0, hexOutput = true): string =
   var rlpCopy = self
   result = newStringOfCap(bytes.len)
-  inspectAux(rlpCopy, indent, result)
+  inspectAux(rlpCopy, indent, hexOutput, result)
 
