@@ -16,6 +16,9 @@ test "empty bytes are not a proper RLP":
     not rlp.isEmpty
 
   expect Exception:
+    rlp.skipElem
+
+  expect Exception:
     discard rlp.getType
 
   expect Exception:
@@ -95,6 +98,18 @@ test "encode and decode lists":
     rlp.listElem(1).toString == "Lorem ipsum dolor sit amet"
     rlp.listElem(2).toString == "Donec ligula tortor, egestas eu est vitae"
 
+  # test creating RLPs from other RLPs
+  var list = rlpFromBytes encodeList(rlp.listELem(1), rlp.listELem(0))
+
+  # test that iteration with enterList/skipElem works as expected
+  list.enterList
+  check list.toString == "Lorem ipsum dolor sit amet"
+  list.skipElem
+  check list.toInt(int32) == 6000.int32
+  list.skipElem
+  check(not list.hasData)
+  expect Exception: list.skipElem
+
 test "toBytes":
   let rlp = rlpFromHex("f2cb847f000001827666827666a040ef02798f211da2e8173d37f255be908871ae65060dbb2f77fb29c0421447f4845ab90b50")
   let tok = rlp.listElem(1).toBytes()
@@ -125,8 +140,12 @@ test "encoding length":
   check emptyListRlp.blobLen == 0
 
 test "basic decoding":
-  var rlp = rlpFromHex("856d6f6f7365")
-  check rlp.inspect == q"moose"
+  var rlp1 = rlpFromHex("856d6f6f7365")
+  var rlp2 = rlpFromHex("0x856d6f6f7365")
+
+  check:
+    rlp1.inspect == q"moose"
+    rlp2.inspect == q"moose"
 
 test "malformed/truncated RLP":
   var rlp = rlpFromHex("b8056d6f6f7365")
@@ -144,3 +163,7 @@ test "encode byte arrays":
     rlp.listElem(0).toBytes().toSeq() == @b1
     rlp.listElem(1).toBytes().toSeq() == @b2
     rlp.listElem(2).toBytes().toSeq() == @b3
+
+    # The first byte here is the length of the datum (132 - 128 => 4)
+    $(rlp.listElem(1).rawData) == "R[132, 6, 8, 12, 123]"
+
