@@ -96,8 +96,12 @@ proc lengthBytesCount(self: Rlp): int =
     return int(marker - LEN_PREFIXED_LIST_MARKER)
   return 0
 
-proc isSingleByte(self: Rlp): bool =
+proc isSingleByte*(self: Rlp): bool =
   hasData() and bytes[position] < BLOB_START_MARKER
+
+proc getByteValue*(self: Rlp): byte =
+  assert self.isSingleByte()
+  return bytes[position]
 
 proc payloadOffset(self: Rlp): int =
   if isSingleByte(): 0 else: 1 + lengthBytesCount()
@@ -175,7 +179,9 @@ proc isInt*(self: Rlp): bool =
 template maxBytes*(o: typedesc[Ordinal | uint64 | uint]): int = sizeof(o)
 
 proc toInt*(self: Rlp, IntType: typedesc): IntType =
-  mixin maxBytes
+  # XXX: work-around a Nim issue with typedesc parameters
+  type OutputType = IntType
+  mixin maxBytes, to
 
   # XXX: self insertions are not working in generic procs
   # https://github.com/nim-lang/Nim/issues/5053
@@ -193,7 +199,7 @@ proc toInt*(self: Rlp, IntType: typedesc): IntType =
     raise newException(RlpTypeMismatch, "The RLP contains a larger than expected Int value")
 
   for i in payloadStart ..< (payloadStart + payloadSize):
-    result = cast[IntType](result shl 8) or cast[IntType](self.bytes[self.position + i])
+    result = (result shl 8) or OutputType(self.bytes[self.position + i])
 
 proc toString*(self: Rlp): string =
   if not isBlob():

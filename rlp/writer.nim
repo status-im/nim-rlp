@@ -13,17 +13,23 @@ type
 
   PrematureFinalizationError* = object of Exception
 
-  IntLike* = concept x, y, type T
+  IntLike* = concept x, y
+    type T = type(x)
+
+    # arithmetic ops
     x + y is T
     x * y is T
     x - y is T
     x div y is T
     x mod y is T
-    x shr y is T
-    x shl y is T
-    x and int # for masking
 
-  Integer* = SomeInteger or IntLike
+    # some int compatibility required for big endian encoding:
+    x shr int is T
+    x shl int is T
+    x and 0xff is int
+    x < 128 is bool
+
+  Integer* = SomeInteger # or IntLike
 
 const
   wrapObjectsInList* = true
@@ -35,14 +41,16 @@ proc bytesNeeded(num: Integer): int =
     inc result
     n = n shr 8
 
-proc writeBigEndian(outStream: var Bytes, number: int,
+proc writeBigEndian(outStream: var Bytes, number: Integer,
                     lastByteIdx: int, numberOfBytes: int) =
+  mixin `and`, `shr`
+
   var n = number
   for i in countdown(lastByteIdx, lastByteIdx - int(numberOfBytes) + 1):
     outStream[i] = byte(n and 0xff)
     n = n shr 8
 
-proc writeBigEndian(outStream: var Bytes, number: int,
+proc writeBigEndian(outStream: var Bytes, number: Integer,
                     numberOfBytes: int) {.inline.} =
   outStream.setLen(outStream.len + numberOfBytes)
   outStream.writeBigEndian(number, outStream.len - 1, numberOfBytes)
@@ -161,7 +169,9 @@ proc appendBytesRange(self; data: BytesRange) =
 proc appendImpl(self; data: MemRange) =
   appendBlob(self, data, BLOB_START_MARKER)
 
-proc appendImpl(self; i: Integer) =
+proc appendInt(self; i: Integer) =
+  # this is created as a separate proc as an extra precaution against
+  # any overloading resolution problems when matching the IntLike concept.
   type IntType = type(i)
 
   if i == IntType(0):
@@ -171,9 +181,12 @@ proc appendImpl(self; i: Integer) =
   else:
     let bytesNeeded = i.bytesNeeded
     self.output.writeCount(bytesNeeded, BLOB_START_MARKER)
-    self.output.writeBigEndian(i.int, bytesNeeded)
+    self.output.writeBigEndian(i, bytesNeeded)
 
   self.maybeClosePendingLists()
+
+template appendImpl(self; i: Integer) =
+  appendInt(self, i)
 
 template appendImpl(self; e: enum) =
   appendImpl(self, int(e))
@@ -233,6 +246,11 @@ proc encode*[T](v: T): BytesRange =
   mixin append
   var writer = initRlpWriter()
   writer.append(v)
+  return writer.finish
+
+proc encodeInt*(i: Integer): BytesRange =
+  var writer = initRlpWriter()
+  writer.appendInt(i)
   return writer.finish
 
 macro encodeList*(args: varargs[untyped]): BytesRange =
