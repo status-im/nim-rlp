@@ -223,13 +223,14 @@ proc toBytes*(self: Rlp): BytesRange =
     raise newException(RlpTypeMismatch,
                        "Bytes expected, but the source RLP in not a blob")
 
-  let
-    payloadOffset = payloadOffset()
-    payloadLen = payloadBytesCount()
-    ibegin = position + payloadOffset
-    iend = ibegin + payloadLen - 1
+  let payloadLen = payloadBytesCount()
+  if payloadLen > 0:
+    let
+      payloadOffset = payloadOffset()
+      ibegin = position + payloadOffset
+      iend = ibegin + payloadLen - 1
 
-  result = bytes.slice(ibegin, iend)
+    result = bytes.slice(ibegin, iend)  
 
 proc currentElemEnd(self: Rlp): int =
   assert hasData()
