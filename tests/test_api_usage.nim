@@ -167,3 +167,8 @@ test "encode byte arrays":
     # The first byte here is the length of the datum (132 - 128 => 4)
     $(rlp.listElem(1).rawData) == "R[132, 6, 8, 12, 123]"
 
+test "empty byte arrays":
+  var
+    rlp = rlpFromBytes rlp.encode("")
+    b = rlp.toBytes
+  check $b == "R[]"
