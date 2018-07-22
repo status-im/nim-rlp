@@ -191,6 +191,9 @@ template appendImpl(self; i: Integer) =
 template appendImpl(self; e: enum) =
   appendImpl(self, int(e))
 
+template appendImpl(self; b: bool) =
+  appendImpl(self, int(b))
+
 proc appendImpl[T](self; listOrBlob: openarray[T]) =
   mixin append
 

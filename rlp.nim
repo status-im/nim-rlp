@@ -293,6 +293,10 @@ proc readImpl(rlp: var Rlp, T: typedesc[enum]): T =
   result = type(result)(rlp.toInt(int))
   rlp.skipElem
 
+proc readImpl(rlp: var Rlp, T: typedesc[bool]): T =
+  result = rlp.toInt(int) != 0
+  rlp.skipElem
+
 proc readImpl[R, E](rlp: var Rlp, T: type array[R, E]): T =
   mixin read
 
