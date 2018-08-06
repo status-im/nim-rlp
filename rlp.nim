@@ -230,7 +230,7 @@ proc toBytes*(self: Rlp): BytesRange =
       ibegin = position + payloadOffset
       iend = ibegin + payloadLen - 1
 
-    result = bytes.slice(ibegin, iend)  
+    result = bytes.slice(ibegin, iend)
 
 proc currentElemEnd(self: Rlp): int =
   assert hasData()
@@ -329,8 +329,9 @@ proc readImpl[E](rlp: var Rlp, T: type seq[E]): T =
 
   when E is (byte or char):
     var bytes = rlp.toBytes
-    result = newSeq[byte](bytes.len)
-    copyMem(addr result[0], bytes.baseAddr, bytes.len)
+    if bytes.len != 0:
+      result = newSeq[byte](bytes.len)
+      copyMem(addr result[0], bytes.baseAddr, bytes.len)
     rlp.skipElem
   else:
     if not rlp.isList:
