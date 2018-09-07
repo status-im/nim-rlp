@@ -7,7 +7,8 @@ description   = "RLP serialization library for Nim"
 license       = "Apache License 2.0"
 skipDirs      = @["tests"]
 
-requires "nim >= 0.17.0", "https://github.com/status-im/nim-ranges >= 0.0.1"
+requires "nim >= 0.17.0",
+         "ranges"
 
 proc configForTests() =
   --hints: off
