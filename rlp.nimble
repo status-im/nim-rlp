@@ -5,8 +5,8 @@ version       = "1.0.1"
 author        = "Status Research & Development GmbH"
 description   = "RLP serialization library for Nim"
 license       = "Apache License 2.0"
-skipDirs      = @["bin", "tests"]
-bin           = @["bin/rlp_inspect"]
+skipDirs      = @["tests"]
+bin           = @["rlp/bin/rlp_inspect"]
 
 requires "nim >= 0.17.0",
          "ranges"
