@@ -217,7 +217,12 @@ proc appendTupleOrObject(self; data: object|tuple, wrapInList: bool) =
     enumerateRlpFields(data, countFields)
     self.startList(fieldsCount)
 
-  template op(x) = append(self, x)
+  template op(field) =
+    when hasCustomPragma(field, rlpCustomSerialization):
+      append(self, field, getCustomPragmaVal(field, rlpCustomSerialization))
+    else:
+      append(self, field)
+
   enumerateRlpFields(data, op)
 
 proc appendImpl(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =

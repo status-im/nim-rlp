@@ -3,7 +3,7 @@
 ## https://ethereum.github.io/yellowpaper/paper.pdf
 
 import
-  strutils, parseutils,
+  macros, strutils, parseutils,
   rlp/[types, writer, object_serialization],
   rlp/priv/defs
 
@@ -357,7 +357,11 @@ proc readImpl(rlp: var Rlp, T: typedesc[object|tuple],
     rlp.position += payloadOffset
 
   template op(field) =
-    field = rlp.read(type(field))
+    when hasCustomPragma(field, rlpCustomSerialization):
+      field = rlp.read(type(field),
+                       getCustomPragmaVal(field, rlpCustomSerialization))
+    else:
+      field = rlp.read(type(field))
 
   enumerateRlpFields(result, op)
 

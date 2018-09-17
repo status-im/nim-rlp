@@ -17,6 +17,11 @@ type
     b: string
     f: Foo
 
+  CompressedFoo = object
+
+  Bar2 = object
+    f {.rlpCustomSerialization: CompressedFoo}: Foo
+
 rlpFields Foo,
   x, y, z
 
@@ -24,6 +29,14 @@ rlpFields Transaction,
   sender, receiver, amount
 
 proc default(T: typedesc): T = discard
+
+proc append*(rlpWriter: var RlpWriter, f: Foo, tag: type CompressedFoo) =
+  rlpWriter.append(f.x)
+  rlpWriter.append(f.y.len)
+
+proc read*(rlp: var Rlp, T: type Foo, tag: type CompressedFoo): Foo =
+  result.x = rlp.read(uint64)
+  result.y = newString(rlp.read(int))
 
 test "encoding and decoding an object":
   var originalBar = Bar(b: "abracadabra",
@@ -46,4 +59,14 @@ test "encoding and decoding an object":
     t2.sender == "Alice"
     t2.receiver == "Bob"
     t2.amount == 1000
+
+test "custom field serialization":
+  var origVal = Bar2(f: Foo(x: 10'u64, y: "y", z: @[]))
+  var bytes = encode(origVal)
+  var r = rlpFromBytes(bytes)
+  var restored = r.read(Bar2)
+
+  check:
+    origVal.f.x == restored.f.x
+    origVal.f.y.len == restored.f.y.len
 
