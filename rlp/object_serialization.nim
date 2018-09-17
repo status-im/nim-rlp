@@ -20,3 +20,9 @@ template rlpInline* {.pragma.}
   ## This can be specified on a record field in order to avoid the
   ## default behavior of wrapping the record in a RLP list.
 
+template rlpCustomSerialization*(T: typedesc) {.pragma.}
+  ## This can be specified on a record field to trigger the use of a
+  ## custom `read` and `append` serialization functions.
+  ## The custom functions will be passed an additional `type` argument
+  ## specefied in the pragma (it is used as an overload tag)
+
