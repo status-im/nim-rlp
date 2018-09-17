@@ -22,11 +22,13 @@ $ nimble install rlp
 
 The `Rlp` type provided by this library represents a cursor over a RLP-encoded
 byte stream. Before instantiating such a cursor, you must convert your
-input data to a `BytesRange` object, which represents an immutable and
-thus cheap-to-copy sub-range view over an underlying `seq[byte]` instance:
+input data a `BytesRange` value provided by the [nim-ranges][RNG] library,
+which represents an immutable and thus cheap-to-copy sub-range view over an
+underlying `seq[byte]` instance:
+
+[RNG]: https://github.com/status-im/nim-ranges
 
 ``` nim
-proc initBytesRange*(s: var seq[byte], ibegin = 0, iend = -1): BytesRange
 proc rlpFromBytes*(data: BytesRange): Rlp
 ```
 
@@ -54,7 +56,7 @@ such as `string`, `int`, `seq[T]`, etc, including composite user-defined
 types (see [Object Serialization](#object-serialization)). The cursor
 will be advanced just past the end of the consumed object.
 
-The `toXX` and `read` family of procs may raise a `BadCastError` in case
+The `toXX` and `read` family of procs may raise a `RlpTypeMismatch` in case
 of type mismatch with the stream contents under the cursor. A corrupted
 RLP stream or an attemp to read past the stream end will be signaled
 with the `MalformedRlpError` exception. If the RLP stream includes data
@@ -136,6 +138,12 @@ var t1 = rlp.read(Transaction)
 var bytes = encode(t1)
 var t2 = bytes.decode(Transaction)
 ```
+
+By default, sub-fields within objects are wrapped in RLP lists. You can avoid this
+behavior by adding the custom pragma `rlpInline` on a particular field. In rare
+circumstances, you may need to serialize the same field type differently depending
+on the enclosing object type. You can use the `rlpCustomSerialization` pragma to
+achieve this.
 
 ## Contributing / Testing
 
