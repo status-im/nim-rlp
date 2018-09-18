@@ -358,8 +358,7 @@ proc readImpl(rlp: var Rlp, T: typedesc[object|tuple],
 
   template op(field) =
     when hasCustomPragma(field, rlpCustomSerialization):
-      field = rlp.read(type(field),
-                       getCustomPragmaVal(field, rlpCustomSerialization))
+      field = rlp.read(result, type(field))
     else:
       field = rlp.read(type(field))
 

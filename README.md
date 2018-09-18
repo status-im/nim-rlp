@@ -114,8 +114,9 @@ short-cut for creating RLP lists.
 As previously explained, generic procs such as `read`, `append`, `encode` and
 `decode` can be used with arbitrary used-defined object types. By default, the
 library will serialize all of the fields of the object using the `fields`
-iterator, but you can modify the order of serialization or include only a
-subset of the fields by using the `rlpFields` macro:
+iterator, but you can also include only a subset of the fields or modify the
+order of serialization or by employing the `rlpIgnore` pragma or by using the
+`rlpFields` macro:
 
 ``` nim
 macro rlpFields*(T: typedesc, fields: varargs[untyped])

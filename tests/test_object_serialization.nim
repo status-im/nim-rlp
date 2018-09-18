@@ -19,8 +19,9 @@ type
 
   CompressedFoo = object
 
-  Bar2 = object
-    f {.rlpCustomSerialization: CompressedFoo}: Foo
+  CustomSerialized = object
+    customFoo {.rlpCustomSerialization.}: Foo
+    ignored {.rlpIgnore.}: int
 
 rlpFields Foo,
   x, y, z
@@ -30,13 +31,15 @@ rlpFields Transaction,
 
 proc default(T: typedesc): T = discard
 
-proc append*(rlpWriter: var RlpWriter, f: Foo, tag: type CompressedFoo) =
+proc append*(rlpWriter: var RlpWriter, holder: CustomSerialized, f: Foo) =
   rlpWriter.append(f.x)
   rlpWriter.append(f.y.len)
+  rlpWriter.append(holder.ignored)
 
-proc read*(rlp: var Rlp, T: type Foo, tag: type CompressedFoo): Foo =
+proc read*(rlp: var Rlp, holder: var CustomSerialized, T: type Foo): Foo =
   result.x = rlp.read(uint64)
   result.y = newString(rlp.read(int))
+  holder.ignored = rlp.read(int) * 2
 
 test "encoding and decoding an object":
   var originalBar = Bar(b: "abracadabra",
@@ -61,12 +64,13 @@ test "encoding and decoding an object":
     t2.amount == 1000
 
 test "custom field serialization":
-  var origVal = Bar2(f: Foo(x: 10'u64, y: "y", z: @[]))
+  var origVal = CustomSerialized(customFoo: Foo(x: 10'u64, y: "y", z: @[]), ignored: 5)
   var bytes = encode(origVal)
   var r = rlpFromBytes(bytes)
-  var restored = r.read(Bar2)
+  var restored = r.read(CustomSerialized)
 
   check:
-    origVal.f.x == restored.f.x
-    origVal.f.y.len == restored.f.y.len
+    origVal.customFoo.x == restored.customFoo.x
+    origVal.customFoo.y.len == restored.customFoo.y.len
+    restored.ignored == 10
 

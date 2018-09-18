@@ -206,7 +206,7 @@ proc appendImpl[T](self; listOrBlob: openarray[T]) =
     for i in 0 ..< listOrBlob.len:
       self.append listOrBlob[i]
 
-proc appendTupleOrObject(self; data: object|tuple, wrapInList: bool) =
+proc appendTupleOrObject(self; obj: object|tuple, wrapInList: bool) =
   mixin enumerateRlpFields, append
 
   const wrapInList = wrapObjectsInList
@@ -214,16 +214,16 @@ proc appendTupleOrObject(self; data: object|tuple, wrapInList: bool) =
   if wrapInList:
     var fieldsCount = 0
     template countFields(x) = inc fieldsCount
-    enumerateRlpFields(data, countFields)
+    enumerateRlpFields(obj, countFields)
     self.startList(fieldsCount)
 
   template op(field) =
     when hasCustomPragma(field, rlpCustomSerialization):
-      append(self, field, getCustomPragmaVal(field, rlpCustomSerialization))
+      append(self, obj, field)
     else:
       append(self, field)
 
-  enumerateRlpFields(data, op)
+  enumerateRlpFields(obj, op)
 
 proc appendImpl(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =
   # TODO: This append proc should be overloaded by `BytesRange` after

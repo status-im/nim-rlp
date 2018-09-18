@@ -1,7 +1,22 @@
 import macros
 
+template rlpIgnore* {.pragma.}
+  ## Specifies that a certain field should be ignored for the purposes
+  ## of RLP serialization
+
+template rlpInline* {.pragma.}
+  ## This can be specified on a record field in order to avoid the
+  ## default behavior of wrapping the record in a RLP list.
+
+template rlpCustomSerialization* {.pragma.}
+  ## This pragma can be applied to a record field to enable the
+  ## use of custom `read` and `append` overloads that also take
+  ## a reference to the object holding the field.
+
 template enumerateRlpFields*[T](x: T, op: untyped) =
-  for f in fields(x): op(f)
+  for f in fields(x):
+    when not hasCustomPragma(f, rlpIgnore):
+      op(f)
 
 macro rlpFields*(T: typedesc, fields: varargs[untyped]): untyped =
   var body = newStmtList()
@@ -15,14 +30,4 @@ macro rlpFields*(T: typedesc, fields: varargs[untyped]): untyped =
   result = quote do:
     template enumerateRlpFields*(`ins`: `T`, `op`: untyped) {.inject.} =
       `body`
-
-template rlpInline* {.pragma.}
-  ## This can be specified on a record field in order to avoid the
-  ## default behavior of wrapping the record in a RLP list.
-
-template rlpCustomSerialization*(T: typedesc) {.pragma.}
-  ## This can be specified on a record field to trigger the use of a
-  ## custom `read` and `append` serialization functions.
-  ## The custom functions will be passed an additional `type` argument
-  ## specefied in the pragma (it is used as an overload tag)
 
