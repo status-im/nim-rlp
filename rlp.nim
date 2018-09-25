@@ -391,12 +391,14 @@ proc decode*(bytes: openarray[byte]): RlpNode =
 
 template decode*(bytes: BytesRange, T: typedesc): untyped =
   mixin read
-  var rlp = rlpFromBytes bytes
+  var rlp = rlpFromBytes(bytes)
   rlp.read(T)
 
 template decode*(bytes: openarray[byte], T: typedesc): T =
   var bytesCopy = @bytes
-  decode(initBytesRange(bytesCopy), T)
+  decode(bytesCopy.toRange(), T)
+template decode*(bytes: seq[byte], T: typedesc): T =
+  decode(bytes.toRange(), T)
 
 proc append*(writer: var RlpWriter; rlp: Rlp) =
   appendRawBytes(writer, rlp.rawData)
