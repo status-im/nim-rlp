@@ -245,24 +245,24 @@ proc initRlpList*(listSize: int): RlpWriter =
   startList(result, listSize)
 
 # TODO: This should return a lent value
-proc finish*(self): seq[byte] =
+proc finish*(self): Bytes =
   if pendingLists.len > 0:
     raise newException(PrematureFinalizationError,
       "Insufficient number of elements written to a started list")
   result = output
 
-proc encode*[T](v: T): seq[byte] =
+proc encode*[T](v: T): Bytes =
   mixin append
   var writer = initRlpWriter()
   writer.append(v)
   return writer.finish
 
-proc encodeInt*(i: Integer): seq[byte] =
+proc encodeInt*(i: Integer): Bytes =
   var writer = initRlpWriter()
   writer.appendInt(i)
   return writer.finish
 
-macro encodeList*(args: varargs[untyped]): seq[byte] =
+macro encodeList*(args: varargs[untyped]): Bytes =
   var
     listLen = args.len
     writer = genSym(nskVar, "rlpWriter")
