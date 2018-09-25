@@ -46,7 +46,7 @@ test "encoding and decoding an object":
                         f: Foo(x: 5'u64, y: "hocus pocus", z: @[100, 200, 300]))
 
   var bytes = encode(originalBar)
-  var r = rlpFromBytes(bytes)
+  var r = rlpFromBytes(bytes.toRange)
   var restoredBar = r.read(Bar)
 
   check:
@@ -66,7 +66,7 @@ test "encoding and decoding an object":
 test "custom field serialization":
   var origVal = CustomSerialized(customFoo: Foo(x: 10'u64, y: "y", z: @[]), ignored: 5)
   var bytes = encode(origVal)
-  var r = rlpFromBytes(bytes)
+  var r = rlpFromBytes(bytes.toRange)
   var restored = r.read(CustomSerialized)
 
   check:

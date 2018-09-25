@@ -14,7 +14,7 @@ proc append(output: var RlpWriter, js: JsonNode) =
   of JArray:
     output.append js.elems
 
-proc hexRepr*(bytes: BytesRange): string =
+proc hexRepr*(bytes: BytesRange|Bytes): string =
   result = newStringOfCap(bytes.len * 2)
   for byte in bytes:
     result.add(toHex(int(byte), 2).toLowerAscii)

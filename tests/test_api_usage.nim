@@ -54,7 +54,7 @@ test "encode/decode object":
   var writer = initRlpWriter()
   writer.append(input)
   let bytes = writer.finish()
-  var rlp = rlpFromBytes(bytes)
+  var rlp = rlpFromBytes(bytes.toRange)
 
   var output = rlp.read(MyObj)
   check:
@@ -68,7 +68,7 @@ test "encode and decode lists":
 
   var
     bytes = writer.finish
-    rlp = rlpFromBytes bytes
+    rlp = rlpFromBytes bytes.toRange
 
   check:
     bytes.hexRepr == "d183666f6fc8836261728362617ac31e2832"
@@ -91,7 +91,7 @@ test "encode and decode lists":
                      "Lorem ipsum dolor sit amet",
                      "Donec ligula tortor, egestas eu est vitae")
 
-  rlp = rlpFromBytes bytes
+  rlp = rlpFromBytes bytes.toRange
   check:
     rlp.listLen == 3
     rlp.listElem(0).toInt(int) == 6000
@@ -99,7 +99,7 @@ test "encode and decode lists":
     rlp.listElem(2).toString == "Donec ligula tortor, egestas eu est vitae"
 
   # test creating RLPs from other RLPs
-  var list = rlpFromBytes encodeList(rlp.listELem(1), rlp.listELem(0))
+  var list = rlpFromBytes encodeList(rlp.listELem(1), rlp.listELem(0)).toRange
 
   # test that iteration with enterList/skipElem works as expected
   list.enterList
@@ -119,7 +119,7 @@ test "toBytes":
 
 test "nested lists":
   let listBytes = encode([[1, 2, 3], [5, 6, 7]])
-  let listRlp = rlpFromBytes listBytes
+  let listRlp = rlpFromBytes listBytes.toRange
   let sublistRlp0 = listRlp.listElem(0)
   let sublistRlp1 = listRlp.listElem(1)
   check sublistRlp0.listElem(0).toInt(int) == 1
@@ -131,12 +131,12 @@ test "nested lists":
 
 test "encoding length":
   let listBytes = encode([1,2,3,4,5])
-  let listRlp = rlpFromBytes listBytes
+  let listRlp = rlpFromBytes listBytes.toRange
   check listRlp.listLen == 5
 
   let emptyListBytes = encode ""
   check emptyListBytes.len == 1
-  let emptyListRlp = rlpFromBytes emptyListBytes
+  let emptyListRlp = rlpFromBytes emptyListBytes.toRange
   check emptyListRlp.blobLen == 0
 
 test "basic decoding":
@@ -157,7 +157,7 @@ test "encode byte arrays":
   var b2 = [byte(6), 8, 12, 123]
   var b3 = @[byte(122), 56, 65, 12]
 
-  let rlp = rlpFromBytes(encode((b1, b2, b3)))
+  let rlp = rlpFromBytes(encode((b1, b2, b3)).toRange)
   check:
     rlp.listLen == 3
     rlp.listElem(0).toBytes().toSeq() == @b1
@@ -169,6 +169,6 @@ test "encode byte arrays":
 
 test "empty byte arrays":
   var
-    rlp = rlpFromBytes rlp.encode("")
+    rlp = rlpFromBytes rlp.encode("").toRange
     b = rlp.toBytes
   check $b == "R[]"
