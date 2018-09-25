@@ -396,9 +396,10 @@ template decode*(bytes: BytesRange, T: typedesc): untyped =
 
 template decode*(bytes: openarray[byte], T: typedesc): T =
   var bytesCopy = @bytes
-  decode(bytesCopy.toRange(), T)
-template decode*(bytes: seq[byte], T: typedesc): T =
-  decode(bytes.toRange(), T)
+  decode(bytesCopy.toRange, T)
+
+template decode*(bytes: seq[byte], T: typedesc): untyped =
+  decode(bytes.toRange, T)
 
 proc append*(writer: var RlpWriter; rlp: Rlp) =
   appendRawBytes(writer, rlp.rawData)
