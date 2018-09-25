@@ -244,6 +244,7 @@ proc initRlpList*(listSize: int): RlpWriter =
   result = initRlpWriter()
   startList(result, listSize)
 
+# TODO: This should return a lent value
 proc finish*(self): seq[byte] =
   if pendingLists.len > 0:
     raise newException(PrematureFinalizationError,
