@@ -176,10 +176,10 @@ proc isInt*(self: Rlp): bool =
     return bytes[offset] != 0
   return false
 
-template maxBytes*(o: typedesc[Ordinal | uint64 | uint]): int = sizeof(o)
+template maxBytes*(o: type[Ordinal | uint64 | uint]): int = sizeof(o)
 
-proc toInt*(self: Rlp, IntType: typedesc): IntType =
-  # XXX: work-around a Nim issue with typedesc parameters
+proc toInt*(self: Rlp, IntType: type): IntType =
+  # XXX: work-around a Nim issue with type parameters
   type OutputType = IntType
   mixin maxBytes, to
 
@@ -289,13 +289,21 @@ proc readImpl(rlp: var Rlp, T: type Integer): Integer =
   result = rlp.toInt(T)
   rlp.skipElem
 
-proc readImpl(rlp: var Rlp, T: typedesc[enum]): T =
+proc readImpl(rlp: var Rlp, T: type[enum]): T =
   result = type(result)(rlp.toInt(int))
   rlp.skipElem
 
-proc readImpl(rlp: var Rlp, T: typedesc[bool]): T =
+proc readImpl(rlp: var Rlp, T: type bool): T =
   result = rlp.toInt(int) != 0
   rlp.skipElem
+
+proc readImpl(rlp: var Rlp, T: type float64): T =
+  # This is not covered in the RLP spec, but Geth uses Go's
+  # `math.Float64bits`, which is defined here:
+  # https://github.com/gopherjs/gopherjs/blob/master/compiler/natives/src/math/math.go
+  let uint64bits = rlp.toInt(uint64)
+  var uint32parts = [uint32(uint64bits), uint32(uint64bits shr 32)]
+  return cast[ptr float64](unsafeAddr uint32parts)[]
 
 proc readImpl[R, E](rlp: var Rlp, T: type array[R, E]): T =
   mixin read
@@ -345,7 +353,7 @@ proc readImpl[E](rlp: var Rlp, T: type seq[E]): T =
 proc readImpl[E](rlp: var Rlp, T: type openarray[E]): seq[E] =
   result = readImpl(rlp, seq[E])
 
-proc readImpl(rlp: var Rlp, T: typedesc[object|tuple],
+proc readImpl(rlp: var Rlp, T: type[object|tuple],
               wrappedInList = wrapObjectsInList): T =
   mixin enumerateRlpFields, read
 
@@ -380,7 +388,7 @@ proc toNodes*(self: var Rlp): RlpNode =
 
 # We define a single `read` template with a pretty low specifity
 # score in order to facilitate easier overloading with user types:
-template read*(rlp: var Rlp, T: typedesc): auto =
+template read*(rlp: var Rlp, T: type): auto =
   readImpl(rlp, T)
 
 proc decode*(bytes: openarray[byte]): RlpNode =
@@ -389,16 +397,16 @@ proc decode*(bytes: openarray[byte]): RlpNode =
     rlp = rlpFromBytes(bytesCopy.toRange())
   return rlp.toNodes
 
-template decode*(bytes: BytesRange, T: typedesc): untyped =
+template decode*(bytes: BytesRange, T: type): untyped =
   mixin read
   var rlp = rlpFromBytes(bytes)
   rlp.read(T)
 
-template decode*(bytes: openarray[byte], T: typedesc): T =
+template decode*(bytes: openarray[byte], T: type): T =
   var bytesCopy = @bytes
   decode(bytesCopy.toRange, T)
 
-template decode*(bytes: seq[byte], T: typedesc): untyped =
+template decode*(bytes: seq[byte], T: type): untyped =
   decode(bytes.toRange, T)
 
 proc append*(writer: var RlpWriter; rlp: Rlp) =

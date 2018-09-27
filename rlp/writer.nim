@@ -185,6 +185,14 @@ proc appendInt(self; i: Integer) =
 
   self.maybeClosePendingLists()
 
+proc appendFloat(self; data: float64) =
+  # This is not covered in the RLP spec, but Geth uses Go's
+  # `math.Float64bits`, which is defined here:
+  # https://github.com/gopherjs/gopherjs/blob/master/compiler/natives/src/math/math.go
+  let uintWords = cast[ptr UncheckedArray[uint32]](unsafeAddr data)
+  let uint64bits = (uint64(uintWords[1]) shl 32) or uint64(uintWords[0])
+  self.appendInt(uint64bits)
+
 template appendImpl(self; i: Integer) =
   appendInt(self, i)
 
@@ -238,7 +246,14 @@ proc appendImpl(self; data: tuple, wrapInList = wrapObjectsInList) {.inline.} =
 
 # We define a single `append` template with a pretty low specifity
 # score in order to facilitate easier overloading with user types:
-template append*[T](self; data: T) = appendImpl(self, data)
+template append*[T](self; data: T) =
+  when data is float64:
+    # XXX: This works around an overloading bug.
+    # Apparently, integer literals will be converted to `float64`
+    # values with higher precedence than the generic match to Integer
+    appendFloat(self, data)
+  else:
+    appendImpl(self, data)
 
 proc initRlpList*(listSize: int): RlpWriter =
   result = initRlpWriter()

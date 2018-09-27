@@ -1,5 +1,5 @@
 import
-  unittest, strutils,
+  math, unittest, strutils,
   rlp, util/json_testing
 
 proc q(s: string): string = "\"" & s & "\""
@@ -172,3 +172,21 @@ test "empty byte arrays":
     rlp = rlpFromBytes rlp.encode("").toRange
     b = rlp.toBytes
   check $b == "R[]"
+
+test "encode/decode floats":
+  for f in [high(float64), low(float64), 0.1, 122.23,
+            103487315.128934,
+            1943935743563457201.391754032785692,
+            0, -0,
+            Inf, NegInf, NaN]:
+
+    template isNaN(n): bool =
+      classify(n) == fcNaN
+
+    template chk(input) =
+      let restored = decode(encode(input), float64)
+      check restored == input or (input.isNaN and restored.isNaN)
+
+    chk  f
+    chk -f
+
