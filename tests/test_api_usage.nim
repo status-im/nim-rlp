@@ -105,8 +105,12 @@ test "encode and decode lists":
   list.enterList
   check list.toString == "Lorem ipsum dolor sit amet"
   list.skipElem
+
   check list.toInt(int32) == 6000.int32
-  list.skipElem
+  var intVar: int
+  list >> intVar
+  check intVar == 6000
+
   check(not list.hasData)
   expect Exception: list.skipElem
 

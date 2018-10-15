@@ -391,6 +391,10 @@ proc toNodes*(self: var Rlp): RlpNode =
 template read*(rlp: var Rlp, T: type): auto =
   readImpl(rlp, T)
 
+proc `>>`*[T](rlp: var Rlp, location: var T) =
+  mixin read
+  location = rlp.read(T)
+
 template readRecordType*(rlp: var Rlp, T: type, wrappedInList: bool): auto =
   readImpl(rlp, T, wrappedInList)
 
