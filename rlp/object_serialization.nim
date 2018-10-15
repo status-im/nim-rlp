@@ -18,6 +18,17 @@ template enumerateRlpFields*[T](x: T, op: untyped) =
     when not hasCustomPragma(f, rlpIgnore):
       op(f)
 
+proc rlpFieldsCount*(T: type): int =
+  mixin enumerateRlpFields
+
+  proc helper: int =
+    var dummy: T
+    template countFields(x) = inc result
+    enumerateRlpFields(dummy, countFields)
+
+  const res = helper()
+  return res
+
 macro rlpFields*(T: typedesc, fields: varargs[untyped]): untyped =
   var body = newStmtList()
   let

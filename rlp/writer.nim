@@ -32,7 +32,7 @@ type
   Integer* = SomeInteger # or IntLike
 
 const
-  wrapObjectsInList* = true
+  wrapObjsInList* = true
 
 proc bytesNeeded(num: Integer): int =
   type IntType = type(num)
@@ -214,16 +214,11 @@ proc appendImpl[T](self; listOrBlob: openarray[T]) =
     for i in 0 ..< listOrBlob.len:
       self.append listOrBlob[i]
 
-proc appendTupleOrObject(self; obj: object|tuple, wrapInList: bool) =
+proc appendRecordType*(self; obj: object|tuple, wrapInList = wrapObjsInList) =
   mixin enumerateRlpFields, append
 
-  const wrapInList = wrapObjectsInList
-
   if wrapInList:
-    var fieldsCount = 0
-    template countFields(x) = inc fieldsCount
-    enumerateRlpFields(obj, countFields)
-    self.startList(fieldsCount)
+    self.startList(static obj.type.rlpFieldsCount)
 
   template op(field) =
     when hasCustomPragma(field, rlpCustomSerialization):
@@ -233,16 +228,16 @@ proc appendTupleOrObject(self; obj: object|tuple, wrapInList: bool) =
 
   enumerateRlpFields(obj, op)
 
-proc appendImpl(self; data: object, wrapInList = wrapObjectsInList) {.inline.} =
+proc appendImpl(self; data: object) {.inline.} =
   # TODO: This append proc should be overloaded by `BytesRange` after
   # nim bug #7416 is fixed.
   when data is BytesRange:
     self.appendBytesRange(data)
   else:
-    self.appendTupleOrObject(data, wrapInList)
+    self.appendRecordType(data)
 
-proc appendImpl(self; data: tuple, wrapInList = wrapObjectsInList) {.inline.} =
-  self.appendTupleOrObject(data, wrapInList)
+proc appendImpl(self; data: tuple) {.inline.} =
+  self.appendRecordType(data)
 
 # We define a single `append` template with a pretty low specifity
 # score in order to facilitate easier overloading with user types:
