@@ -74,3 +74,9 @@ test "custom field serialization":
     origVal.customFoo.y.len == restored.customFoo.y.len
     restored.ignored == 10
 
+test "RLP fields count":
+  check:
+    Bar.rlpFieldsCount == 2
+    Foo.rlpFieldsCount == 3
+    Transaction.rlpFieldsCount == 3
+

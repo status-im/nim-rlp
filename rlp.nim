@@ -354,7 +354,7 @@ proc readImpl[E](rlp: var Rlp, T: type openarray[E]): seq[E] =
   result = readImpl(rlp, seq[E])
 
 proc readImpl(rlp: var Rlp, T: type[object|tuple],
-              wrappedInList = wrapObjectsInList): T =
+              wrappedInList = wrapObjsInList): T =
   mixin enumerateRlpFields, read
 
   if wrappedInList:
@@ -390,6 +390,13 @@ proc toNodes*(self: var Rlp): RlpNode =
 # score in order to facilitate easier overloading with user types:
 template read*(rlp: var Rlp, T: type): auto =
   readImpl(rlp, T)
+
+proc `>>`*[T](rlp: var Rlp, location: var T) =
+  mixin read
+  location = rlp.read(T)
+
+template readRecordType*(rlp: var Rlp, T: type, wrappedInList: bool): auto =
+  readImpl(rlp, T, wrappedInList)
 
 proc decode*(bytes: openarray[byte]): RlpNode =
   var
