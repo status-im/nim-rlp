@@ -241,14 +241,14 @@ proc appendImpl(self; data: tuple) {.inline.} =
 
 # We define a single `append` template with a pretty low specifity
 # score in order to facilitate easier overloading with user types:
-template append*[T](self; data: T) =
+template append*[T](w: var RlpWriter; data: T) =
   when data is float64:
     # XXX: This works around an overloading bug.
     # Apparently, integer literals will be converted to `float64`
     # values with higher precedence than the generic match to Integer
-    appendFloat(self, data)
+    appendFloat(w, data)
   else:
-    appendImpl(self, data)
+    appendImpl(w, data)
 
 proc initRlpList*(listSize: int): RlpWriter =
   result = initRlpWriter()
