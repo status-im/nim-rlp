@@ -61,7 +61,7 @@ proc rlpFromHex*(input: string): Rlp =
 proc hasData*(self: Rlp): bool =
   position < bytes.len
 
-proc currentElemEnd(self: Rlp): int
+proc currentElemEnd(self: Rlp): int {.gcsafe.}
 
 proc rawData*(self: Rlp): BytesRange =
   return self.bytes[position ..< self.currentElemEnd]
