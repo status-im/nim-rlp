@@ -13,7 +13,7 @@ test "empty bytes are not a proper RLP":
     not rlp.hasData
     not rlp.isBlob
     not rlp.isList
-    not rlp.isEmpty
+    rlp.isEmpty
 
   expect Exception:
     rlp.skipElem

@@ -71,7 +71,7 @@ proc isBlob*(self: Rlp): bool =
 
 proc isEmpty*(self: Rlp): bool =
   ### Contains a blob or a list of zero length
-  hasData() and (bytes[position] == BLOB_START_MARKER or
+  not hasData() or (bytes[position] == BLOB_START_MARKER or
                  bytes[position] == LIST_START_MARKER)
 
 proc isList*(self: Rlp): bool =
@@ -233,7 +233,7 @@ proc toBytes*(self: Rlp): BytesRange =
     result = bytes.slice(ibegin, iend)
 
 proc currentElemEnd(self: Rlp): int =
-  assert hasData()
+  doAssert hasData()
   result = position
 
   if isSingleByte():
